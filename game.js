@@ -74,6 +74,17 @@ function create() {
 
   chatInput.addEventListener('keydown', onChatSubmit);
   closeBtn.addEventListener('click', closeChat);
+
+  // Add event listeners to disable/enable Phaser input when chat is focused
+  chatInput.addEventListener('focus', () => {
+    // Disable Phaser keyboard input when chat input is focused
+    game.input.keyboard.enabled = false;
+  });
+
+  chatInput.addEventListener('blur', () => {
+    // Re-enable Phaser keyboard input when chat input loses focus
+    game.input.keyboard.enabled = true;
+  });
 }
 
 function update() {
@@ -86,8 +97,8 @@ function update() {
     else if (cursors.down.isDown) player.setVelocityY(160);
   }
 
-  // Check for interaction key press
-  if (Phaser.Input.Keyboard.JustDown(interactKey)) {
+  // Check for interaction key press - only when Phaser input is enabled
+  if (game.input.keyboard.enabled && Phaser.Input.Keyboard.JustDown(interactKey)) {
     if (!talking) {
       // Find the closest NPC in range to interact with
       for (const npc of npcGroup.getChildren()) {
@@ -117,6 +128,8 @@ function closeChat() {
   chatPanel.style.display = 'none';
   talking = false;
   currentNpc = null; // Clear the current NPC
+  // Re-enable Phaser input when chat is closed
+  game.input.keyboard.enabled = true;
 }
 
 async function onChatSubmit(e) {
@@ -174,7 +187,7 @@ async function onChatSubmit(e) {
 
     } catch (error) {
       console.error('Error fetching from proxy server:', error);
-      thinkingMessage.innerHTML = `<div><b>${currentNpc.name}:</b> Sorry, I'm having trouble thinking right now. ${error.message}</div>`;
+      thinkingMessage.innerHTML = `<div><b>${currentNpc.name}:</b> Sorry, I'm having trouble thinking right now.</div>`;
     } finally {
         chatInput.focus();
         chatHistory.scrollTop = chatHistory.scrollHeight; // Scroll to the latest message
