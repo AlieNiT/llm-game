@@ -37,7 +37,7 @@ app.post('/chat', async (req, res) => {
 
   console.log('Sending messages to OpenRouter:', messages);
 
-  // Define the proxy agent
+
   const proxyUrl = 'http://127.0.0.1:2081';
   const agent = new HttpsProxyAgent(proxyUrl);
 
@@ -52,7 +52,7 @@ app.post('/chat', async (req, res) => {
         model: "deepseek/deepseek-chat-v3-0324:free",
         messages
       }),
-      agent: agent // This line routes the request through your proxy
+      agent: agent
     });
 
     if (!response.ok) {
@@ -64,7 +64,7 @@ app.post('/chat', async (req, res) => {
     const data = await response.json();
     console.log('OpenRouter response:', data);
     
-    // Extract the reply from OpenRouter's response format
+
     const reply = data.choices?.[0]?.message?.content;
     
     if (!reply) {
