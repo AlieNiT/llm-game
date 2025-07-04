@@ -135,9 +135,8 @@ async function onChatSubmit(e) {
     chatHistory.appendChild(thinkingMessage);
     chatHistory.scrollTop = chatHistory.scrollHeight;
 
-
     try {
-      // **Call your proxy server**
+      // **Fixed: Call the correct port (3000) for your proxy server**
       const response = await fetch('http://localhost:3000/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -149,13 +148,21 @@ async function onChatSubmit(e) {
       });
       
       if (!response.ok) {
-        throw new Error('Network response was not ok');
+        const errorText = await response.text();
+        console.error('Server error:', response.status, errorText);
+        throw new Error(`Server error ${response.status}: ${errorText}`);
       }
 
       const data = await response.json();
+      console.log('Server response:', data); // Debug log
       
-      // Extract the text from the Gemini response
-      const reply = data.candidates[0].content.parts[0].text;
+      // **Fixed: Extract the reply with proper error handling**
+      const reply = data.reply;
+      
+      if (!reply) {
+        console.error('No reply in response:', data);
+        throw new Error('No reply received from server');
+      }
 
       // Save history
       if (!npcHistories[currentNpc.name]) npcHistories[currentNpc.name] = [];
@@ -167,7 +174,7 @@ async function onChatSubmit(e) {
 
     } catch (error) {
       console.error('Error fetching from proxy server:', error);
-      thinkingMessage.innerHTML = `<div><b>${currentNpc.name}:</b> Sorry, I'm having trouble thinking right now.</div>`;
+      thinkingMessage.innerHTML = `<div><b>${currentNpc.name}:</b> Sorry, I'm having trouble thinking right now. ${error.message}</div>`;
     } finally {
         chatInput.focus();
         chatHistory.scrollTop = chatHistory.scrollHeight; // Scroll to the latest message
