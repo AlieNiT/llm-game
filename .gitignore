@@ -1,2 +1,28 @@
 digest.txt
-node_modules
+# Node.js
+node_modules/
+.env
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Logs
+logs
+*.log
+*.log.*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Vscode
+.vscode/
+
+# Build output (if any future builds)
+dist/
+build/
+
+# Phaser cache (if saved manually)
+*.tmp
+*.bak
+.cache/
