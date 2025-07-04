@@ -137,60 +137,56 @@ async function onChatSubmit(e) {
     const input = chatInput.value.trim();
     if (input === '' || !currentNpc) return;
 
-
     chatHistory.innerHTML += `<div><b>You:</b> ${input}</div>`;
     chatInput.value = '';
     chatHistory.scrollTop = chatHistory.scrollHeight;
 
-
-    const thinkingMessage = document.createElement('div');
-    thinkingMessage.innerHTML = `<b>${currentNpc.name}:</b> ...`;
-    chatHistory.appendChild(thinkingMessage);
+    const replyContainer = document.createElement('div');
+    replyContainer.innerHTML = `<b>${currentNpc.name}:</b> `;
+    chatHistory.appendChild(replyContainer);
     chatHistory.scrollTop = chatHistory.scrollHeight;
 
-    try {
+    if (!npcHistories[currentNpc.name]) npcHistories[currentNpc.name] = [];
+    npcHistories[currentNpc.name].push({ sender: 'user', text: input });
 
+    try {
       const response = await fetch('http://localhost:3000/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           message: input,
           npc: currentNpc.name,
-          history: npcHistories[currentNpc.name] || []
+          history: npcHistories[currentNpc.name]
         })
       });
-      
-      if (!response.ok) {
+
+      if (!response.ok || !response.body) {
         const errorText = await response.text();
         console.error('Server error:', response.status, errorText);
         throw new Error(`Server error ${response.status}: ${errorText}`);
       }
 
-      const data = await response.json();
-      console.log('Server response:', data);
-      
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let reply = '';
 
-      const reply = data.reply;
-      
-      if (!reply) {
-        console.error('No reply in response:', data);
-        throw new Error('No reply received from server');
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        const chunk = decoder.decode(value, { stream: true });
+        reply += chunk;
+        replyContainer.innerHTML += chunk;
+        chatHistory.scrollTop = chatHistory.scrollHeight;
       }
 
-
-      if (!npcHistories[currentNpc.name]) npcHistories[currentNpc.name] = [];
-      npcHistories[currentNpc.name].push({ sender: 'user', text: input });
       npcHistories[currentNpc.name].push({ sender: 'model', text: reply });
-
-
-      thinkingMessage.innerHTML = `<div><b>${currentNpc.name}:</b> ${reply}</div>`;
 
     } catch (error) {
       console.error('Error fetching from proxy server:', error);
-      thinkingMessage.innerHTML = `<div><b>${currentNpc.name}:</b> Sorry, I'm having trouble thinking right now.</div>`;
+      replyContainer.innerHTML += 'Sorry, I\'m having trouble thinking right now.';
     } finally {
-        chatInput.focus();
-        chatHistory.scrollTop = chatHistory.scrollHeight;
+      chatInput.focus();
+      chatHistory.scrollTop = chatHistory.scrollHeight;
     }
   }
 }

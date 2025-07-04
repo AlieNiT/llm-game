@@ -36,9 +36,11 @@ app.post('/chat', async (req, res) => {
     { role: 'user', content: message }
   ];
 
-  res.setHeader('Content-Type', 'text/event-stream');
-  res.setHeader('Cache-Control', 'no-cache');
-  res.setHeader('Connection', 'keep-alive');
+  res.writeHead(200, {
+    'Content-Type': 'text/plain; charset=utf-8',
+    'Cache-Control': 'no-cache',
+    'Connection': 'keep-alive',
+  });
 
   try {
     const { body } = await request("https://openrouter.ai/api/v1/chat/completions", {
@@ -85,9 +87,7 @@ app.post('/chat', async (req, res) => {
     res.end();
 
   } catch (error) {
-    console.error('OpenRouter call failed:', error);
-    res.write(`event: error\ndata: ${JSON.stringify({ error: 'Failed to fetch LLM response', details: error.message })}\n\n`);
-    res.end();
+    res.status(500).json({ error: 'Failed to fetch LLM response', details: error.message });
   }
 });
 
