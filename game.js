@@ -13,6 +13,7 @@ let chatPanel, chatInput, chatHistory, closeBtn, npcName;
 
 let talking = false;
 let currentNpc = null;
+let lastDirection = 'right';
 
 
 const npcData = [
@@ -39,15 +40,33 @@ let npcHistories = {};
 
 
 function preload() {
-  this.load.image('player', 'https://labs.phaser.io/assets/sprites/phaser-dude.png');
+  // this.load.image('player', 'https://labs.phaser.io/assets/sprites/phaser-dude.png');
+  this.load.spritesheet('player', 'assets/Adam.png', {
+    frameWidth: 32,
+    frameHeight: 32
+  });
 
   this.load.image('npc1', 'https://labs.phaser.io/assets/sprites/mushroom2.png');
   this.load.image('npc2', 'https://labs.phaser.io/assets/sprites/slime.png');
-  this.load.image('npc3', 'https://labs.phaser.io/assets/sprites/blue_gem.png');
+  this.load.image('npc3', 'https://labs.phaser.io/assets/sprites/mashroom3.png');
 }
 
 function create() {
   player = this.physics.add.sprite(100, 100, 'player');
+  
+  this.anims.create({
+    key: 'walkRight',
+    frames: this.anims.generateFrameNumbers('player', { start: 0, end: 8 }),
+    frameRate: 10,
+    repeat: -1
+  });
+
+  this.anims.create({
+    key: 'walkLeft',
+    frames: this.anims.generateFrameNumbers('player', { start: 9, end: 17 }),
+    frameRate: 10,
+    repeat: -1
+  });
 
 
   npcGroup = this.physics.add.staticGroup();
@@ -91,8 +110,21 @@ function update() {
 
   if (!talking) {
     player.setVelocity(0);
-    if (cursors.left.isDown) player.setVelocityX(-160);
-    else if (cursors.right.isDown) player.setVelocityX(160);
+
+    if (cursors.left.isDown) {
+      player.setVelocityX(-160);
+      player.anims.play('walkLeft', true);
+      lastDirection = 'left';
+    } else if (cursors.right.isDown) {
+      player.setVelocityX(160);
+      player.anims.play('walkRight', true);
+      lastDirection = 'right';
+    } else {
+      player.anims.stop();
+      if (lastDirection === 'right') player.setFrame(0);
+      else if (lastDirection === 'left') player.setFrame(9);
+    }
+
     if (cursors.up.isDown) player.setVelocityY(-160);
     else if (cursors.down.isDown) player.setVelocityY(160);
   }
@@ -119,7 +151,8 @@ function openChat(npc) {
   
   npcName.textContent = npc.name;
   chatPanel.style.display = 'flex';
-  chatHistory.innerHTML = `<div><b>${npc.name}:</b> ${npc.message}</div>`;
+  chatHistory.innerHTML = '';
+  addChatMessage(npc.name, npc.message, false);
   chatInput.value = '';
   chatInput.focus();
 }
@@ -137,11 +170,11 @@ async function onChatSubmit(e) {
     const input = chatInput.value.trim();
     if (input === '' || !currentNpc) return;
 
-    chatHistory.innerHTML += `<div><b>You:</b> ${input}</div>`;
+    addChatMessage('You', input, false);
     chatInput.value = '';
-    chatHistory.scrollTop = chatHistory.scrollHeight;
 
     const replyContainer = document.createElement('div');
+    replyContainer.className = 'chat-message';
     replyContainer.innerHTML = `<b>${currentNpc.name}:</b> `;
     chatHistory.appendChild(replyContainer);
     chatHistory.scrollTop = chatHistory.scrollHeight;
@@ -169,24 +202,72 @@ async function onChatSubmit(e) {
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
       let reply = '';
+      let lastRenderedLength = 0;
+
+      // Create a content span for the streaming text
+      const contentSpan = document.createElement('span');
+      replyContainer.appendChild(contentSpan);
 
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
+        
         const chunk = decoder.decode(value, { stream: true });
         reply += chunk;
-        replyContainer.innerHTML += chunk;
+        
+        // Try to render markdown incrementally
+        try {
+          const renderedMarkdown = renderMarkdown(reply);
+          contentSpan.innerHTML = renderedMarkdown;
+        } catch (error) {
+          // If markdown parsing fails (incomplete markdown), show raw text
+          contentSpan.textContent = reply;
+        }
+        
         chatHistory.scrollTop = chatHistory.scrollHeight;
+      }
+
+      // Final render to ensure everything is properly formatted
+      try {
+        const finalRendered = renderMarkdown(reply);
+        contentSpan.innerHTML = finalRendered;
+      } catch (error) {
+        contentSpan.textContent = reply;
       }
 
       npcHistories[currentNpc.name].push({ sender: 'model', text: reply });
 
     } catch (error) {
       console.error('Error fetching from proxy server:', error);
-      replyContainer.innerHTML += 'Sorry, I\'m having trouble thinking right now.';
+      replyContainer.innerHTML = `<b>${currentNpc.name}:</b> Sorry, I'm having trouble thinking right now.`;
     } finally {
       chatInput.focus();
       chatHistory.scrollTop = chatHistory.scrollHeight;
     }
   }
+}
+
+function renderMarkdown(text) {
+  try {
+    return marked.parse(text);
+  } catch (error) {
+    console.error('Markdown parsing error:', error);
+    return text; // Fallback to plain text
+  }
+}
+
+// Utility function to add chat message with markdown support
+function addChatMessage(sender, message, isMarkdown = false) {
+  const messageDiv = document.createElement('div');
+  messageDiv.className = 'chat-message';
+  
+  if (isMarkdown) {
+    messageDiv.innerHTML = `<b>${sender}:</b> ${renderMarkdown(message)}`;
+  } else {
+    messageDiv.innerHTML = `<b>${sender}:</b> ${message}`;
+  }
+  
+  chatHistory.appendChild(messageDiv);
+  chatHistory.scrollTop = chatHistory.scrollHeight;
+  return messageDiv;
 }

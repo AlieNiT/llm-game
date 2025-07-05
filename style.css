@@ -46,3 +46,87 @@ body {
   cursor: pointer;
   padding: 4px 8px;
 }
+.chat-message {
+  margin-bottom: 10px;
+}
+
+.chat-message strong {
+  color: #4CAF50;
+  font-weight: bold;
+}
+
+.chat-message em {
+  font-style: italic;
+}
+
+.chat-message code {
+  background: #333;
+  color: #0FF;
+  padding: 2px 4px;
+  border-radius: 3px;
+  font-family: 'Courier New', monospace;
+}
+
+.chat-message pre {
+  background: #333;
+  color: #0FF;
+  padding: 8px;
+  border-radius: 4px;
+  overflow-x: auto;
+  border-left: 3px solid #4CAF50;
+}
+
+.chat-message pre code {
+  background: none;
+  padding: 0;
+}
+
+.chat-message blockquote {
+  border-left: 3px solid #4CAF50;
+  margin: 5px 0;
+  padding-left: 10px;
+  color: #BBB;
+}
+
+.chat-message ul, .chat-message ol {
+  margin: 5px 0;
+  padding-left: 20px;
+}
+
+.chat-message li {
+  margin-bottom: 2px;
+}
+
+.chat-message h1, .chat-message h2, .chat-message h3 {
+  color: #4CAF50;
+  margin: 8px 0 4px 0;
+}
+
+.chat-message h1 { font-size: 18px; }
+.chat-message h2 { font-size: 16px; }
+.chat-message h3 { font-size: 14px; }
+
+.chat-message a {
+  color: #2196F3;
+  text-decoration: none;
+}
+
+.chat-message a:hover {
+  text-decoration: underline;
+}
+
+.chat-message table {
+  border-collapse: collapse;
+  margin: 5px 0;
+}
+
+.chat-message th, .chat-message td {
+  border: 1px solid #555;
+  padding: 4px 8px;
+  text-align: left;
+}
+
+.chat-message th {
+  background: #333;
+  color: #4CAF50;
+}
