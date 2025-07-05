@@ -36,14 +36,8 @@ app.post('/chat', async (req, res) => {
     { role: 'user', content: message }
   ];
 
-  res.writeHead(200, {
-    'Content-Type': 'text/plain; charset=utf-8',
-    'Cache-Control': 'no-cache',
-    'Connection': 'keep-alive',
-  });
-
   try {
-    const { body } = await request("https://openrouter.ai/api/v1/chat/completions", {
+    const response = await request("https://openrouter.ai/api/v1/chat/completions", {
       method: "POST",
       headers: {
         "Authorization": `Bearer ${OPENROUTER_API_KEY}`,
@@ -56,10 +50,23 @@ app.post('/chat', async (req, res) => {
       }),
       dispatcher: agent
     });
+
+    if (response.statusCode === 429) {
+      const errorBody = await response.body.text();
+      const errorData = JSON.parse(errorBody);
+      return res.status(429).json({ error: 'Rate limit exceeded', details: errorData.error?.message });
+    }
+
+    res.writeHead(200, {
+      'Content-Type': 'text/plain; charset=utf-8',
+      'Cache-Control': 'no-cache',
+      'Connection': 'keep-alive',
+    });
+
     const decoder = new TextDecoder();
     let buffer = '';
 
-    for await (const chunk of body) {
+    for await (const chunk of response.body) {
       buffer += decoder.decode(chunk, { stream: true });
 
       let lines = buffer.split('\n');

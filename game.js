@@ -18,63 +18,70 @@ let lastDirection = 'right';
 
 const npcData = [
   { 
-    name: 'Mushroom', 
+    name: 'قارچ القروچ', 
     sprite: 'npc1',
-    x: 300, y: 100, 
-    message: 'I have a math question for you. What is $5 \\times (3+2)$?' 
+    x: 530, y: 145, 
   },
   { 
-    name: 'Slime', 
+    name: 'پیس آف پیپر', 
     sprite: 'npc2',
-    x: 500, y: 400, 
-    message: 'I know a bit about our world. What is the name of the valley we live in?' 
+    x: 720, y: 100, 
   },
   { 
-    name: 'Gem', 
+    name: 'جادوگر', 
     sprite: 'npc3',
-    x: 150, y: 450, 
-    message: 'I hold ancient knowledge. What element is the most abundant in the Earth\'s crust?'
+    x: 50, y: 300, 
   },
 ];
 let npcHistories = {};
 
 
 function preload() {
-  // this.load.image('player', 'https://labs.phaser.io/assets/sprites/phaser-dude.png');
-  this.load.spritesheet('player', 'assets/Adam.png', {
+  this.load.image('background', 'assets/background.png');
+  this.load.spritesheet('player', 'assets/run.png', {
     frameWidth: 32,
     frameHeight: 32
   });
-
   this.load.image('npc1', 'https://labs.phaser.io/assets/sprites/mushroom2.png');
   this.load.image('npc2', 'https://labs.phaser.io/assets/sprites/slime.png');
-  this.load.image('npc3', 'https://labs.phaser.io/assets/sprites/mashroom3.png');
+  this.load.spritesheet('npc3', 'assets/Witch.png', {
+    frameWidth: 32,
+    frameHeight: 32
+  });
 }
 
 function create() {
+  this.add.image(0, 0, 'background').setOrigin(0, 0); 
+
   player = this.physics.add.sprite(100, 100, 'player');
-  
   this.anims.create({
     key: 'walkRight',
-    frames: this.anims.generateFrameNumbers('player', { start: 0, end: 8 }),
+    frames: this.anims.generateFrameNumbers('player', { start: 0, end: 7 }),
     frameRate: 10,
     repeat: -1
   });
 
   this.anims.create({
     key: 'walkLeft',
-    frames: this.anims.generateFrameNumbers('player', { start: 9, end: 17 }),
+    frames: this.anims.generateFrameNumbers('player', { start: 8, end: 15  }),
     frameRate: 10,
     repeat: -1
   });
-
+  this.anims.create({ 
+    key: 'witchStanding',
+    frames: this.anims.generateFrameNumbers('npc3', { start: 0, end: 3  }),
+    frameRate: 10,
+    repeat: -1
+  });
 
   npcGroup = this.physics.add.staticGroup();
 
 
   npcData.forEach(data => {
     const npc = npcGroup.create(data.x, data.y, data.sprite);
-
+    if (data.sprite === 'npc3') {
+      npc.anims.play('witchStanding', true);
+    }
     npc.name = data.name;
     npc.message = data.message;
   });
@@ -107,7 +114,6 @@ function create() {
 }
 
 function update() {
-
   if (!talking) {
     player.setVelocity(0);
 
@@ -152,7 +158,6 @@ function openChat(npc) {
   npcName.textContent = npc.name;
   chatPanel.style.display = 'flex';
   chatHistory.innerHTML = '';
-  addChatMessage(npc.name, npc.message, false);
   chatInput.value = '';
   chatInput.focus();
 }
@@ -202,9 +207,7 @@ async function onChatSubmit(e) {
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
       let reply = '';
-      let lastRenderedLength = 0;
 
-      // Create a content span for the streaming text
       const contentSpan = document.createElement('span');
       replyContainer.appendChild(contentSpan);
 
@@ -215,19 +218,16 @@ async function onChatSubmit(e) {
         const chunk = decoder.decode(value, { stream: true });
         reply += chunk;
         
-        // Try to render markdown incrementally
         try {
           const renderedMarkdown = renderMarkdown(reply);
           contentSpan.innerHTML = renderedMarkdown;
         } catch (error) {
-          // If markdown parsing fails (incomplete markdown), show raw text
           contentSpan.textContent = reply;
         }
         
         chatHistory.scrollTop = chatHistory.scrollHeight;
       }
 
-      // Final render to ensure everything is properly formatted
       try {
         const finalRendered = renderMarkdown(reply);
         contentSpan.innerHTML = finalRendered;
@@ -252,11 +252,10 @@ function renderMarkdown(text) {
     return marked.parse(text);
   } catch (error) {
     console.error('Markdown parsing error:', error);
-    return text; // Fallback to plain text
+    return text;
   }
 }
 
-// Utility function to add chat message with markdown support
 function addChatMessage(sender, message, isMarkdown = false) {
   const messageDiv = document.createElement('div');
   messageDiv.className = 'chat-message';
