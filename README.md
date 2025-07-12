@@ -33,7 +33,7 @@ llm-game/
 ### 1. Clone the repo
 
 ```bash
-git clone https://github.com/your-username/llm-game.git
+git clone https://github.com/alienit/llm-game.git
 cd llm-game
 ```
 
